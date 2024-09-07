@@ -34,6 +34,22 @@ func main() {
 
 	_, err = conn.Write(pingMessage)
 	if err != nil {
-		slog.Error("Failed to send ping", slog.Any("error", err))
+		slog.Error("Failed to send Ping", slog.Any("error", err))
+		return
 	}
+
+	buf := make([]byte, 1024)
+	n, err := conn.Read(buf)
+	if err != nil {
+		slog.Error("Failed to read Pong", slog.Any("error", err))
+		return
+	}
+
+	pongMsg, err := ping.Deserialize((buf[:n]))
+	if err != nil {
+		slog.Error("Failed to deserialize pong", slog.Any("error", err))
+		return
+	}
+
+	slog.Info("Received Pong", slog.Int64("timestamp", pongMsg.Timestamp))
 }
