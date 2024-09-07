@@ -25,31 +25,40 @@ func main() {
 	}
 	defer conn.Close()
 
-	timestamp := time.Now().Unix()
-	pingMessage, err := ping.Serialize(timestamp)
-	if err != nil {
-		slog.Error("Failed to serialize timestamp", slog.Int64("timestamp", timestamp), slog.Any("error", err))
-		return
-	}
+	ticker := time.NewTicker(5 * time.Second)
+	defer ticker.Stop()
 
-	_, err = conn.Write(pingMessage)
-	if err != nil {
-		slog.Error("Failed to send Ping", slog.Any("error", err))
-		return
-	}
+	for {
+		select {
+		case <-ticker.C:
 
-	buf := make([]byte, 1024)
-	n, err := conn.Read(buf)
-	if err != nil {
-		slog.Error("Failed to read Pong", slog.Any("error", err))
-		return
-	}
+			timestamp := time.Now().Unix()
+			pingMessage, err := ping.Serialize(timestamp)
+			if err != nil {
+				slog.Error("Failed to serialize timestamp", slog.Int64("timestamp", timestamp), slog.Any("error", err))
+				return
+			}
 
-	pongMsg, err := ping.Deserialize((buf[:n]))
-	if err != nil {
-		slog.Error("Failed to deserialize pong", slog.Any("error", err))
-		return
-	}
+			_, err = conn.Write(pingMessage)
+			if err != nil {
+				slog.Error("Failed to send Ping", slog.Any("error", err))
+				return
+			}
 
-	slog.Info("Received Pong", slog.Int64("timestamp", pongMsg.Timestamp))
+			buf := make([]byte, 1024)
+			n, err := conn.Read(buf)
+			if err != nil {
+				slog.Error("Failed to read Pong", slog.Any("error", err))
+				return
+			}
+
+			pongMsg, err := ping.Deserialize((buf[:n]))
+			if err != nil {
+				slog.Error("Failed to deserialize pong", slog.Any("error", err))
+				return
+			}
+
+			slog.Info("Received Pong", slog.Int64("timestamp", pongMsg.Timestamp))
+		}
+	}
 }
