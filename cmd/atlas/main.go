@@ -1,9 +1,9 @@
 package main
 
 import (
-	"fmt"
+	"log/slog"
 )
 
 func main() {
-	fmt.Println("Atlas starting...")
+	slog.Info("Atlas starting")
 }
