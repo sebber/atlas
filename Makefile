@@ -13,7 +13,7 @@ test:
 	@go test ./...
 
 clean:
-	@rm -f ./bin/$(BINARY_NAME_ATLAS) ./bin/$(<BINARY_NAME_TERMINAL)
+	@rm -f ./bin/$(BINARY_NAME_ATLAS) ./bin/$(BINARY_NAME_TERMINAL)
 
 run-atlas:
 	@go run ./cmd/atlas $(ARGS)
