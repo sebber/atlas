@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"io"
 	"log/slog"
 	"net"
 	"time"
@@ -42,24 +43,31 @@ func main() {
 func handleConnection(conn net.Conn) {
 	defer conn.Close()
 
-	buf := make([]byte, 1024)
-	n, err := conn.Read(buf)
-	if err != nil {
-		slog.Error("Error reading from connection", slog.Any("error", err))
-		return
-	}
+	for {
+		buf := make([]byte, 1024)
+		n, err := conn.Read(buf)
+		if err != nil {
+			if err == io.EOF {
+				slog.Info("Client disconnected")
+				break
+			}
 
-	msg, err := ping.Deserialize(buf[:n])
-	if err != nil {
-		slog.Error("Failed to deserialize ping", slog.Any("error", err))
-		return
-	}
+			slog.Error("Error reading from connection", slog.Any("error", err))
+			return
+		}
 
-	slog.Info("Received Ping", slog.Int64("timestamp", msg.Timestamp))
+		msg, err := ping.Deserialize(buf[:n])
+		if err != nil {
+			slog.Error("Failed to deserialize ping", slog.Any("error", err))
+			return
+		}
 
-	err = sendPong(conn)
-	if err != nil {
-		slog.Error("Failed to send Pong", slog.Any("error", err))
+		slog.Info("Received Ping", slog.Int64("timestamp", msg.Timestamp))
+
+		err = sendPong(conn)
+		if err != nil {
+			slog.Error("Failed to send Pong", slog.Any("error", err))
+		}
 	}
 }
 
