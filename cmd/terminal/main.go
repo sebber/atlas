@@ -14,7 +14,14 @@ func main() {
 	slog.Info("Terminal starting")
 
 	port := flag.Int("port", 8123, "Port number for the atlast server")
+	nickname := flag.String("nickname", "unnamed", "Nickname for the whatevs")
 	flag.Parse()
+
+	if *nickname == "unnamed" {
+		slog.Error("Nickname required")
+		return
+	}
+	slog.Info("Connecting as", slog.String("nickname", *nickname))
 
 	address := fmt.Sprintf("localhost:%d", *port)
 
@@ -24,6 +31,12 @@ func main() {
 		return
 	}
 	defer conn.Close()
+
+	_, err = conn.Write([]byte(*nickname))
+	if err != nil {
+		slog.Error("Failed identifying with nickname", slog.Any("error", err))
+		return
+	}
 
 	ticker := time.NewTicker(5 * time.Second)
 	defer ticker.Stop()
