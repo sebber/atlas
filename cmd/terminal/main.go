@@ -7,7 +7,7 @@ import (
 	"net"
 	"time"
 
-	ping "github.com/sebber/atlas/internal"
+	messaging "github.com/sebber/atlas/internal/messaging"
 )
 
 func main() {
@@ -32,11 +32,24 @@ func main() {
 	}
 	defer conn.Close()
 
-	_, err = conn.Write([]byte(*nickname))
+	msg, err := messaging.ReceiveMessage(conn)
 	if err != nil {
-		slog.Error("Failed identifying with nickname", slog.Any("error", err))
+		slog.Error("Couldn't read message", slog.Any("error", err))
 		return
 	}
+
+	switch m := msg.(type) {
+	case *messaging.ConnStartMessage:
+		slog.Info("got a ConnStartMessage", slog.Any("type", m.MessageType()), slog.String("id", m.Id))
+	default:
+		slog.Info("Got unknown message")
+	}
+
+	// _, err = conn.Write([]byte(*nickname))
+	// if err != nil {
+	// 	slog.Error("Failed identifying with nickname", slog.Any("error", err))
+	// 	return
+	// }
 
 	ticker := time.NewTicker(5 * time.Second)
 	defer ticker.Stop()
@@ -45,33 +58,28 @@ func main() {
 		select {
 		case <-ticker.C:
 
-			timestamp := time.Now().Unix()
-			pingMessage, err := ping.Serialize(timestamp)
-			if err != nil {
-				slog.Error("Failed to serialize timestamp", slog.Int64("timestamp", timestamp), slog.Any("error", err))
-				return
-			}
+			pingMsg := messaging.PingMessage{Timestamp: time.Now().Unix()}
 
-			_, err = conn.Write(pingMessage)
+			err := messaging.SendMessage(conn, &pingMsg)
 			if err != nil {
 				slog.Error("Failed to send Ping", slog.Any("error", err))
 				return
 			}
 
-			buf := make([]byte, 1024)
-			n, err := conn.Read(buf)
-			if err != nil {
-				slog.Error("Failed to read Pong", slog.Any("error", err))
-				return
-			}
-
-			pongMsg, err := ping.Deserialize((buf[:n]))
-			if err != nil {
-				slog.Error("Failed to deserialize pong", slog.Any("error", err))
-				return
-			}
-
-			slog.Info("Received Pong", slog.Int64("timestamp", pongMsg.Timestamp))
+			// buf := make([]byte, 1024)
+			// n, err := conn.Read(buf)
+			// if err != nil {
+			// 	slog.Error("Failed to read Pong", slog.Any("error", err))
+			// 	return
+			// }
+			//
+			// pongMsg, err := messaging.Deserialize((buf[:n]))
+			// if err != nil {
+			// 	slog.Error("Failed to deserialize pong", slog.Any("error", err))
+			// 	return
+			// }
+			//
+			// slog.Info("Received Pong", slog.Int64("timestamp", pongMsg.Timestamp))
 		}
 	}
 }
