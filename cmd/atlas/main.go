@@ -2,8 +2,9 @@ package main
 
 import (
 	"flag"
-	server "github.com/sebber/atlas/internal/server"
 	"log/slog"
+
+	server "github.com/sebber/atlas/internal/server"
 )
 
 func main() {

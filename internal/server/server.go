@@ -13,8 +13,7 @@ import (
 )
 
 type Client struct {
-	Nickname string
-	Conn     net.Conn
+	Conn net.Conn
 }
 
 var clients = make(map[string]Client)
