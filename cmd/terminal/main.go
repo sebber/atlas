@@ -11,7 +11,7 @@ import (
 func main() {
 	slog.Info("Terminal starting")
 
-	port := flag.Int("port", 8123, "Port number for the atlast server")
+	port := flag.Int("port", 2323, "Port number for the atlast server")
 	flag.Parse()
 
 	address := fmt.Sprintf("localhost:%d", *port)

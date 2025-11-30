@@ -20,15 +20,14 @@ var clients = make(map[string]Client)
 var clientsMutex sync.Mutex
 
 type Server struct {
-	Port int
 }
 
-func NewServer(port int) *Server {
-	return &Server{Port: port}
+func NewServer() *Server {
+	return &Server{}
 }
 
 func (s *Server) Start() error {
-	listener, err := net.Listen("tcp", fmt.Sprintf(":%d", s.Port))
+	listener, err := net.Listen("tcp", ":2323")
 	if err != nil {
 		slog.Error("Could not start server", slog.Any("error", err))
 		return err
@@ -49,9 +48,8 @@ func (s *Server) Start() error {
 }
 
 func handleConnection(conn net.Conn) {
-	defer conn.Close()
-
 	connId := generateConnectionID()
+	defer disconnectClient(conn, connId)
 
 	connMsg := messaging.ConnStartMessage{Id: connId}
 	err := messaging.SendMessage(conn, &connMsg)
@@ -61,7 +59,7 @@ func handleConnection(conn net.Conn) {
 
 	for {
 		ctx := context.Background()
-		context.WithValue(ctx, "connId", connId)
+		ctx = context.WithValue(ctx, "connId", connId)
 
 		msg, err := messaging.ReceiveMessage(conn)
 		if err != nil {
@@ -82,6 +80,7 @@ func handleConnection(conn net.Conn) {
 }
 
 func disconnectClient(conn net.Conn, nickname string) {
+	conn.Close()
 	clientsMutex.Lock()
 	delete(clients, nickname)
 	slog.Info("Client disconnected")
